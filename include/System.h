@@ -114,7 +114,7 @@ public:
     // Proccess the given monocular frame and optionally imu data
     // Input images: RGB (CV_8UC3) or grayscale (CV_8U). RGB is converted to grayscale.
     // Returns the camera pose (empty if tracking fails).
-    cv::Mat TrackMonocular(const cv::Mat &im, const cv::Mat &seg, const double &timestamp, const vector<IMU::Point>& vImuMeas = vector<IMU::Point>(), string filename="", string segname="");
+    cv::Mat TrackMonocular(const cv::Mat &im, const cv::Mat &seg, const double &timestamp, const vector<IMU::Point>& vImuMeas = vector<IMU::Point>(), string filename="", string segname="", bool semantic_mode = false);
 
 
     // This stops local mapping thread (map building) and performs only camera tracking.

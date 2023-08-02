@@ -36,7 +36,7 @@ void LoadSegment(const string &strSequence, vector<string> &vstrImageFilenames,
 
 int main(int argc, char **argv)
 {
-    if(argc != 4)
+    if(argc != 5)
     {
         cerr << endl << "Usage: ./mono_kitti path_to_vocabulary path_to_settings path_to_sequence" << endl;
         return 1;
@@ -47,7 +47,8 @@ int main(int argc, char **argv)
     vector<string> vstrSegFilenames;
     vector<double> vTimestamps;
     LoadImages(string(argv[3]), vstrImageFilenames, vTimestamps);
-    LoadSegment(string(argv[3]), vstrSegFilenames, vTimestamps);
+    LoadSegment(string(argv[4]), vstrSegFilenames, vTimestamps);
+    cerr<<"after loading";
 
     int nImages = vstrImageFilenames.size();
 
@@ -60,6 +61,7 @@ int main(int argc, char **argv)
 
     // Main loop
     cv::Mat im;
+    cv::Mat seg;
     for(int ni=0; ni<nImages; ni++)
     {
         // Read image from file
@@ -85,7 +87,7 @@ int main(int argc, char **argv)
 #endif
 
         // Pass the image to the SLAM system
-        SLAM.TrackMonocular(im, seg, tframe,vector<ORB_SLAM3::IMU::Point>(), vstrImageFilenames[ni], vstrSegFilenames[ni]);
+        SLAM.TrackMonocular(im, seg, tframe,vector<ORB_SLAM3::IMU::Point>(), vstrImageFilenames[ni], vstrSegFilenames[ni], true);
 
 #ifdef COMPILEDWITHC11
         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
@@ -179,7 +181,7 @@ void LoadSegment(const string &strPathToSequence, vector<string> &vstrImageFilen
         }
     }
 
-    string strPrefixLeft = strPathToSequence + "/segment/";
+    string strPrefixLeft = strPathToSequence + "/image_0/";
 
     const int nTimes = vTimestamps.size();
     vstrImageFilenames.resize(nTimes);

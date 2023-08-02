@@ -269,7 +269,7 @@ cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const doub
     return Tcw;
 }
 
-cv::Mat System::TrackMonocular(const cv::Mat &im, const cv::Mat &seg, const double &timestamp, const vector<IMU::Point>& vImuMeas = vector<IMU::Point>(), string filename="", string segname="")
+cv::Mat System::TrackMonocular(const cv::Mat &im, const cv::Mat &seg, const double &timestamp, const vector<IMU::Point>& vImuMeas, string filename, string segname, bool semantic_mode)
 {
     if(mSensor!=MONOCULAR && mSensor!=IMU_MONOCULAR)
     {
@@ -322,7 +322,7 @@ cv::Mat System::TrackMonocular(const cv::Mat &im, const cv::Mat &seg, const doub
         for(size_t i_imu = 0; i_imu < vImuMeas.size(); i_imu++)
             mpTracker->GrabImuData(vImuMeas[i_imu]);
 
-    cv::Mat Tcw = mpTracker->GrabImageMonocular(im,seg,timestamp,filename,segname);
+    cv::Mat Tcw = mpTracker->GrabImageMonocular(im,seg,timestamp,filename,segname,semantic_mode);
 
     unique_lock<mutex> lock2(mMutexState);
     mTrackingState = mpTracker->mState;

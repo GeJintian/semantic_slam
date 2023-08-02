@@ -1329,7 +1329,7 @@ cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const d
 }
 
 
-cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const cv::Mat &seg, const double &timestamp, string filename, string segname)
+cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const cv::Mat &seg, const double &timestamp, string filename, string segname, bool semantic_mode)
 {
     mImGray = im;
 
