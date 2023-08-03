@@ -56,7 +56,7 @@ public:
     // Mask is ignored in the current implementation.
     int operator()( cv::InputArray _image, cv::InputArray _mask,
                     std::vector<cv::KeyPoint>& _keypoints,
-                    cv::OutputArray _descriptors, std::vector<int> &vLappingArea);
+                    cv::OutputArray _descriptors, std::vector<int> &vLappingArea, const bool semantic_mode = false);
 
     int inline GetLevels(){
         return nlevels;}
@@ -81,10 +81,11 @@ public:
     }
 
     std::vector<cv::Mat> mvImagePyramid;
+    std::vector<cv::Mat> mvSegPyramid;
 
 protected:
 
-    void ComputePyramid(cv::Mat image);
+    void ComputePyramid(cv::Mat image, cv::Mat seg, bool semantic_mode = false);
     void ComputeKeyPointsOctTree(std::vector<std::vector<cv::KeyPoint> >& allKeypoints);    
     std::vector<cv::KeyPoint> DistributeOctTree(const std::vector<cv::KeyPoint>& vToDistributeKeys, const int &minX,
                                            const int &maxX, const int &minY, const int &maxY, const int &nFeatures, const int &level);
