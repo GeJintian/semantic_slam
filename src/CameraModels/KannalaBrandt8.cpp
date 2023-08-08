@@ -193,7 +193,7 @@ namespace ORB_SLAM3 {
     }
 
     bool KannalaBrandt8::ReconstructWithTwoViews(const std::vector<cv::KeyPoint>& vKeys1, const std::vector<cv::KeyPoint>& vKeys2, const std::vector<int> &vMatches12,
-                                          cv::Mat &R21, cv::Mat &t21, std::vector<cv::Point3f> &vP3D, std::vector<bool> &vbTriangulated){
+                                          cv::Mat &R21, cv::Mat &t21, std::vector<cv::Point3f> &vP3D, std::vector<bool> &vbTriangulated, std::vector<int> &vClass, const bool semantic_mode){
         if(!tvr){
             cv::Mat K = this->toK();
             tvr = new TwoViewReconstruction(K);
@@ -215,7 +215,7 @@ namespace ORB_SLAM3 {
         for(size_t i = 0; i < vKeys1.size(); i++) vKeysUn1[i].pt = vPts1[i];
         for(size_t i = 0; i < vKeys2.size(); i++) vKeysUn2[i].pt = vPts2[i];
 
-        return tvr->Reconstruct(vKeysUn1,vKeysUn2,vMatches12,R21,t21,vP3D,vbTriangulated);
+        return tvr->Reconstruct(vKeysUn1,vKeysUn2,vMatches12,R21,t21,vP3D,vbTriangulated, vClass, semantic_mode);
     }
 
 

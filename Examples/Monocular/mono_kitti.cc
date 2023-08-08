@@ -52,8 +52,10 @@ int main(int argc, char **argv)
 
     int nImages = vstrImageFilenames.size();
 
+    bool semantic_mode = true;
+
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
-    ORB_SLAM3::System SLAM(argv[1],argv[2],ORB_SLAM3::System::MONOCULAR,true);
+    ORB_SLAM3::System SLAM(argv[1],argv[2],ORB_SLAM3::System::MONOCULAR,true, semantic_mode);
 
     // Vector for tracking time statistics
     vector<float> vTimesTrack;
@@ -87,7 +89,7 @@ int main(int argc, char **argv)
 #endif
 
         // Pass the image to the SLAM system
-        SLAM.TrackMonocular(im, seg, tframe,vector<ORB_SLAM3::IMU::Point>(), vstrImageFilenames[ni], vstrSegFilenames[ni], true);
+        SLAM.TrackMonocular(im, seg, tframe,vector<ORB_SLAM3::IMU::Point>(), vstrImageFilenames[ni], vstrSegFilenames[ni], semantic_mode);
 
 #ifdef COMPILEDWITHC11
         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
@@ -125,7 +127,8 @@ int main(int argc, char **argv)
     cout << "mean tracking time: " << totaltime/nImages << endl;
 
     // Save camera trajectory
-    SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");    
+    // SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");
+    SLAM.SaveTrajectoryKITTI("CameraTrajectory_seg.txt");
 
     return 0;
 }

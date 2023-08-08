@@ -77,7 +77,7 @@ namespace ORB_SLAM3 {
         cv::Mat unprojectJac(const cv::Point2f &p2D);
 
         bool ReconstructWithTwoViews(const std::vector<cv::KeyPoint>& vKeys1, const std::vector<cv::KeyPoint>& vKeys2, const std::vector<int> &vMatches12,
-                                     cv::Mat &R21, cv::Mat &t21, std::vector<cv::Point3f> &vP3D, std::vector<bool> &vbTriangulated);
+                                     cv::Mat &R21, cv::Mat &t21, std::vector<cv::Point3f> &vP3D, std::vector<bool> &vbTriangulated, std::vector<int> &vClass, const bool semantic_mode);
 
         cv::Mat toK();
         cv::Matx33f toK_();

@@ -43,7 +43,7 @@ public:
     FrameDrawer(Atlas* pAtlas);
 
     // Update info from the last processed frame.
-    void Update(Tracking *pTracker);
+    void Update(Tracking *pTracker, const bool semantic_mode = false);
 
     // Draw last processed frame.
     cv::Mat DrawFrame(bool bOldFeatures=true);

@@ -18,6 +18,7 @@
 
 #include "FrameDrawer.h"
 #include "Tracking.h"
+#include<string>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -333,10 +334,18 @@ void FrameDrawer::DrawTextInfo(cv::Mat &im, int nState, cv::Mat &imText)
 
 }
 
-void FrameDrawer::Update(Tracking *pTracker)
+void FrameDrawer::Update(Tracking *pTracker, const bool semantic_mode)
 {
     unique_lock<mutex> lock(mMutex);
-    pTracker->mImGray.copyTo(mIm);
+    if (!semantic_mode){
+        pTracker->mImGray.copyTo(mIm);
+    }
+    else{
+        //cerr<<pTracker->mCurrentFrame.mNameFile<<endl;
+        string a = "/Datasets/Kitti/data_odometry_gray/dataset/output_color/03/";
+        mIm = cv::imread(a+pTracker->mCurrentFrame.mNameFile.substr(pTracker->mCurrentFrame.mNameFile.find_last_of('/')+1),cv::IMREAD_UNCHANGED);
+    }
+    
     mvCurrentKeys=pTracker->mCurrentFrame.mvKeys;
 
     if(both){

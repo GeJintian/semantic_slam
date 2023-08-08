@@ -584,6 +584,7 @@ void LocalMapping::CreateNewMapPoints()
             // Check parallax between rays
             auto xn1 = pCamera1->unprojectMat_(kp1.pt);
             auto xn2 = pCamera2->unprojectMat_(kp2.pt);
+            int class_id = kp2.class_id;
 
             auto ray1 = Rwc1*xn1;
             auto ray2 = Rwc2*xn2;
@@ -730,7 +731,7 @@ void LocalMapping::CreateNewMapPoints()
 
             // Triangulation is succesfull
             cv::Mat x3D_(x3D);
-            MapPoint* pMP = new MapPoint(x3D_,mpCurrentKeyFrame,mpAtlas->GetCurrentMap());
+            MapPoint* pMP = new MapPoint(x3D_,mpCurrentKeyFrame,mpAtlas->GetCurrentMap(),class_id);
 
             pMP->AddObservation(mpCurrentKeyFrame,idx1);            
             pMP->AddObservation(pKF2,idx2);

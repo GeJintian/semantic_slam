@@ -1134,7 +1134,12 @@ namespace ORB_SLAM3
                 if (level != 0){
                     keypoint->pt *= scale;
                 }
-
+                if(semantic_mode){
+                    keypoint->class_id =int(seg.at<uchar>(cvRound(keypoint->pt.y), cvRound(keypoint->pt.x)));
+                    //cerr<<seg<<endl;
+                    //cerr<<keypoint->class_id<<endl;
+                    //exit(0);
+                }
                 if(keypoint->pt.x >= vLappingArea[0] && keypoint->pt.x <= vLappingArea[1]){
                     _keypoints.at(stereoIndex) = (*keypoint);
                     desc.row(i).copyTo(descriptors.row(stereoIndex));
@@ -1148,7 +1153,7 @@ namespace ORB_SLAM3
                 i++;
             }
         }
-        //cout << "[ORBextractor]: extracted " << _keypoints.size() << " KeyPoints" << endl;
+        // cerr << "[ORBextractor]: extracted " << _keypoints.size() << " KeyPoints" << endl;
         return monoIndex;
     }
 

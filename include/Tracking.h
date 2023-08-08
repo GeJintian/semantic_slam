@@ -130,6 +130,7 @@ public:
     std::vector<int> mvIniMatches;
     std::vector<cv::Point2f> mvbPrevMatched;
     std::vector<cv::Point3f> mvIniP3D;
+    std::vector<int> mvClass;
     Frame mInitialFrame;
 
     // Lists used to recover the full camera trajectory at the end of the execution.
@@ -185,19 +186,19 @@ public:
 protected:
 
     // Main tracking function. It is independent of the input sensor.
-    void Track();
+    void Track(const bool semantic_mode = false);
 
     // Map initialization for stereo and RGB-D
     void StereoInitialization();
 
     // Map initialization for monocular
-    void MonocularInitialization();
+    void MonocularInitialization(const bool semantic_mode = false);
     void CreateNewMapPoints();
     cv::Mat ComputeF12(KeyFrame *&pKF1, KeyFrame *&pKF2);
     void CreateInitialMapMonocular();
 
     void CheckReplacedInLastFrame();
-    bool TrackReferenceKeyFrame();
+    bool TrackReferenceKeyFrame(const bool semantic_mode = false);
     void UpdateLastFrame();
     bool TrackWithMotionModel();
     bool PredictStateIMU();
