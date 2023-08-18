@@ -42,17 +42,23 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    bool semantic_mode = true;
+
     // Retrieve paths to images and segments
     vector<string> vstrImageFilenames;
     vector<string> vstrSegFilenames;
     vector<double> vTimestamps;
     LoadImages(string(argv[3]), vstrImageFilenames, vTimestamps);
-    LoadSegment(string(argv[4]), vstrSegFilenames, vTimestamps);
+    if(semantic_mode){
+        LoadSegment(string(argv[4]), vstrSegFilenames, vTimestamps);
+    }
+    else{
+        vstrSegFilenames = vstrImageFilenames;
+    }
     cerr<<"after loading";
 
     int nImages = vstrImageFilenames.size();
 
-    bool semantic_mode = true;
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
     ORB_SLAM3::System SLAM(argv[1],argv[2],ORB_SLAM3::System::MONOCULAR,true, semantic_mode);
@@ -127,8 +133,9 @@ int main(int argc, char **argv)
     cout << "mean tracking time: " << totaltime/nImages << endl;
 
     // Save camera trajectory
-    // SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");
-    SLAM.SaveTrajectoryKITTI("CameraTrajectory_seg.txt");
+    string save_path = "/Datasets/Kitti/trajectory/09/";
+    SLAM.SaveKeyFrameTrajectoryTUM(save_path+"KeyFrameTrajectory_seg.txt");
+    SLAM.SaveTrajectoryKITTI(save_path+"CameraTrajectory_seg.txt");
 
     return 0;
 }
