@@ -429,7 +429,6 @@ namespace ORB_SLAM3
         }
 
         mvImagePyramid.resize(nlevels);
-        mvSegPyramid.resize(nlevels);
 
         mnFeaturesPerLevel.resize(nlevels);
         float factor = 1.0f / scaleFactor;
@@ -1067,7 +1066,7 @@ namespace ORB_SLAM3
     }
 
     int ORBextractor::operator()( InputArray _image, InputArray _mask, vector<KeyPoint>& _keypoints,
-                                  OutputArray _descriptors, std::vector<int> &vLappingArea, const bool semantic_mode)
+                                  OutputArray _descriptors, std::vector<int> &vLappingArea)
     {
         //cout << "[ORBextractor]: Max Features: " << nfeatures << endl;
         if(_image.empty())
@@ -1076,10 +1075,8 @@ namespace ORB_SLAM3
         Mat image = _image.getMat();
         assert(image.type() == CV_8UC1 );
 
-        Mat seg = _mask.getMat();
-
         // Pre-compute the scale pyramid
-        ComputePyramid(image, seg, semantic_mode);
+        ComputePyramid(image);
 
         vector < vector<KeyPoint> > allKeypoints;
         ComputeKeyPointsOctTree(allKeypoints);
@@ -1134,12 +1131,7 @@ namespace ORB_SLAM3
                 if (level != 0){
                     keypoint->pt *= scale;
                 }
-                if(semantic_mode){
-                    keypoint->class_id =int(seg.at<uchar>(cvRound(keypoint->pt.y), cvRound(keypoint->pt.x)));
-                    //cerr<<seg<<endl;
-                    //cerr<<keypoint->class_id<<endl;
-                    //exit(0);
-                }
+
                 if(keypoint->pt.x >= vLappingArea[0] && keypoint->pt.x <= vLappingArea[1]){
                     _keypoints.at(stereoIndex) = (*keypoint);
                     desc.row(i).copyTo(descriptors.row(stereoIndex));
@@ -1153,18 +1145,18 @@ namespace ORB_SLAM3
                 i++;
             }
         }
-        // cerr << "[ORBextractor]: extracted " << _keypoints.size() << " KeyPoints" << endl;
+        //cout << "[ORBextractor]: extracted " << _keypoints.size() << " KeyPoints" << endl;
         return monoIndex;
     }
 
-    void ORBextractor::ComputePyramid(cv::Mat image, cv::Mat seg, const bool semantic_mode)
+    void ORBextractor::ComputePyramid(cv::Mat image)
     {
         for (int level = 0; level < nlevels; ++level)
         {
             float scale = mvInvScaleFactor[level];
             Size sz(cvRound((float)image.cols*scale), cvRound((float)image.rows*scale));
             Size wholeSize(sz.width + EDGE_THRESHOLD*2, sz.height + EDGE_THRESHOLD*2);
-            Mat temp(wholeSize, image.type());
+            Mat temp(wholeSize, image.type()), masktemp;
             mvImagePyramid[level] = temp(Rect(EDGE_THRESHOLD, EDGE_THRESHOLD, sz.width, sz.height));
 
             // Compute the resized image
@@ -1181,30 +1173,7 @@ namespace ORB_SLAM3
                                BORDER_REFLECT_101);
             }
         }
-        if(semantic_mode){
-            for (int level = 0; level < nlevels; ++level)
-                {
-                    float scale = mvInvScaleFactor[level];
-                    Size sz(cvRound((float)image.cols*scale), cvRound((float)image.rows*scale));
-                    Size wholeSize(sz.width + EDGE_THRESHOLD*2, sz.height + EDGE_THRESHOLD*2);
-                    Mat masktemp(wholeSize, seg.type());
-                    mvSegPyramid[level] = masktemp(Rect(EDGE_THRESHOLD, EDGE_THRESHOLD, sz.width, sz.height));
 
-                    // Compute the resized image
-                    if( level != 0 )
-                    {
-                        resize(mvSegPyramid[level-1], mvSegPyramid[level], sz, 0, 0, INTER_NEAREST);
-
-                        copyMakeBorder(mvSegPyramid[level], masktemp, EDGE_THRESHOLD, EDGE_THRESHOLD, EDGE_THRESHOLD, EDGE_THRESHOLD,
-                                    BORDER_REFLECT_101+BORDER_ISOLATED);
-                    }
-                    else
-                    {
-                        copyMakeBorder(seg, masktemp, EDGE_THRESHOLD, EDGE_THRESHOLD, EDGE_THRESHOLD, EDGE_THRESHOLD,
-                                    BORDER_REFLECT_101);
-                    }
-                }
-        }
     }
 
 } //namespace ORB_SLAM

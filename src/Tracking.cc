@@ -38,7 +38,7 @@
 #include <include/MLPnPsolver.h>
 
 using namespace std;
-extern int count_i = 0;
+
 namespace ORB_SLAM3
 {
 
@@ -1329,7 +1329,7 @@ cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const d
 }
 
 
-cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const cv::Mat &seg, const double &timestamp, string filename, string segname, const bool semantic_mode)
+cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp, string filename)
 {
     mImGray = im;
 
@@ -1351,25 +1351,24 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const cv::Mat &seg, cons
     if (mSensor == System::MONOCULAR)
     {
         if(mState==NOT_INITIALIZED || mState==NO_IMAGES_YET ||(lastID - initID) < mMaxFrames)
-            mCurrentFrame = Frame(mImGray,seg,semantic_mode,timestamp,mpIniORBextractor,mpORBVocabulary,mpCamera,mDistCoef,mbf,mThDepth);
+            mCurrentFrame = Frame(mImGray,timestamp,mpIniORBextractor,mpORBVocabulary,mpCamera,mDistCoef,mbf,mThDepth);
         else
-            mCurrentFrame = Frame(mImGray,seg,semantic_mode,timestamp, mpORBextractorLeft,mpORBVocabulary,mpCamera,mDistCoef,mbf,mThDepth);
+            mCurrentFrame = Frame(mImGray,timestamp,mpORBextractorLeft,mpORBVocabulary,mpCamera,mDistCoef,mbf,mThDepth);
     }
     else if(mSensor == System::IMU_MONOCULAR)
     {
         if(mState==NOT_INITIALIZED || mState==NO_IMAGES_YET)
         {
-            mCurrentFrame = Frame(mImGray,seg,semantic_mode,timestamp,mpIniORBextractor,mpORBVocabulary,mpCamera,mDistCoef,mbf,mThDepth,&mLastFrame,*mpImuCalib);
+            mCurrentFrame = Frame(mImGray,timestamp,mpIniORBextractor,mpORBVocabulary,mpCamera,mDistCoef,mbf,mThDepth,&mLastFrame,*mpImuCalib);
         }
         else
-            mCurrentFrame = Frame(mImGray,seg,semantic_mode,timestamp,mpORBextractorLeft,mpORBVocabulary,mpCamera,mDistCoef,mbf,mThDepth,&mLastFrame,*mpImuCalib);
+            mCurrentFrame = Frame(mImGray,timestamp,mpORBextractorLeft,mpORBVocabulary,mpCamera,mDistCoef,mbf,mThDepth,&mLastFrame,*mpImuCalib);
     }
 
     if (mState==NO_IMAGES_YET)
         t0=timestamp;
 
     mCurrentFrame.mNameFile = filename;
-    mCurrentFrame.mNameSeg = segname;
     mCurrentFrame.mnDataset = mnNumDataset;
 
 #ifdef REGISTER_TIMES
@@ -1377,7 +1376,7 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const cv::Mat &seg, cons
 #endif
 
     lastID = mCurrentFrame.mnId;
-    Track(semantic_mode);
+    Track();
 
     return mCurrentFrame.mTcw.clone();
 }
@@ -1655,7 +1654,7 @@ void Tracking::ComputeVelocitiesAccBias(const vector<Frame*> &vpFs, float &bax, 
 }
 
 
-void Tracking::Track(const bool semantic_mode)
+void Tracking::Track()
 {
 
     if (bStepByStep)
@@ -1679,14 +1678,14 @@ void Tracking::Track(const bool semantic_mode)
         if(mLastFrame.mTimeStamp>mCurrentFrame.mTimeStamp)
         {
             cerr << "ERROR: Frame with a timestamp older than previous frame detected!" << endl;
-            unique_lock<mutex> lock(mMutexImuQueue); 
+            unique_lock<mutex> lock(mMutexImuQueue);
             mlQueueImuData.clear();
             CreateMapInAtlas();
             return;
         }
         else if(mCurrentFrame.mTimeStamp>mLastFrame.mTimeStamp+1.0)
         {
-            cerr << "id last: " << mLastFrame.mnId << "    id curr: " << mCurrentFrame.mnId << endl;
+            cout << "id last: " << mLastFrame.mnId << "    id curr: " << mCurrentFrame.mnId << endl;
             if(mpAtlas->isInertial())
             {
 
@@ -1761,11 +1760,11 @@ void Tracking::Track(const bool semantic_mode)
             StereoInitialization();
         else
         {
-            MonocularInitialization(semantic_mode);
+            MonocularInitialization();
         }
 
-        mpFrameDrawer->Update(this,false);
-        cerr<<mState<<endl;
+        mpFrameDrawer->Update(this);
+
         if(mState!=OK) // If rightly initialized, mState=OK
         {
             mLastFrame = Frame(mCurrentFrame);
@@ -1781,7 +1780,7 @@ void Tracking::Track(const bool semantic_mode)
     {
         // System is initialized. Track Frame.
         bool bOK;
-    count_i = count_i+1;
+
 #ifdef REGISTER_TIMES
         std::chrono::steady_clock::time_point time_StartPosePred = std::chrono::steady_clock::now();
 #endif
@@ -1789,7 +1788,7 @@ void Tracking::Track(const bool semantic_mode)
         // Initial camera pose estimation using motion model or relocalization (if tracking is lost)
         if(!mbOnlyTracking)
         {
-//TODO: I can change the initialization to semantics
+
             // State OK
             // Local Mapping is activated. This is the normal behaviour, unless
             // you explicitly activate the "only tracking" mode.
@@ -1802,14 +1801,14 @@ void Tracking::Track(const bool semantic_mode)
                 if((mVelocity.empty() && !pCurrentMap->isImuInitialized()) || mCurrentFrame.mnId<mnLastRelocFrameId+2)
                 {
                     //Verbose::PrintMess("TRACK: Track with respect to the reference KF ", Verbose::VERBOSITY_DEBUG);
-                    bOK = TrackReferenceKeyFrame(semantic_mode);
+                    bOK = TrackReferenceKeyFrame();
                 }
                 else
                 {
                     //Verbose::PrintMess("TRACK: Track with motion model", Verbose::VERBOSITY_DEBUG);
                     bOK = TrackWithMotionModel();
                     if(!bOK)
-                        bOK = TrackReferenceKeyFrame(semantic_mode);
+                        bOK = TrackReferenceKeyFrame();
                 }
 
 
@@ -1875,7 +1874,7 @@ void Tracking::Track(const bool semantic_mode)
                     if (pCurrentMap->KeyFramesInMap()<10)
                     {
                         mpSystem->ResetActiveMap();
-                        cerr << "Reseting current map..." << endl;
+                        cout << "Reseting current map..." << endl;
                     }else
                         CreateMapInAtlas();
 
@@ -1909,7 +1908,7 @@ void Tracking::Track(const bool semantic_mode)
                     }
                     else
                     {
-                        bOK = TrackReferenceKeyFrame(semantic_mode);
+                        bOK = TrackReferenceKeyFrame();
                     }
                 }
                 else
@@ -2052,7 +2051,7 @@ void Tracking::Track(const bool semantic_mode)
 #endif
 
         // Update drawer
-        mpFrameDrawer->Update(this,false);
+        mpFrameDrawer->Update(this);
         if(!mCurrentFrame.mTcw.empty())
             mpMapDrawer->SetCurrentCameraPose(mCurrentFrame.mTcw);
 
@@ -2127,7 +2126,6 @@ void Tracking::Track(const bool semantic_mode)
         {
             if(pCurrentMap->KeyFramesInMap()<=5)
             {
-                cerr<<"mState Lost"<<endl;
                 mpSystem->ResetActiveMap();
                 return;
             }
@@ -2172,10 +2170,6 @@ void Tracking::Track(const bool semantic_mode)
         }
 
     }
-    else{
-        cerr<<"lost one frame"<<endl;
-    }
-
 }
 
 
@@ -2228,7 +2222,7 @@ void Tracking::StereoInitialization()
                 if(z>0)
                 {
                     cv::Mat x3D = mCurrentFrame.UnprojectStereo(i);
-                    MapPoint* pNewMP = new MapPoint(x3D,pKFini,mpAtlas->GetCurrentMap(),-1);
+                    MapPoint* pNewMP = new MapPoint(x3D,pKFini,mpAtlas->GetCurrentMap());
                     pNewMP->AddObservation(pKFini,i);
                     pKFini->AddMapPoint(pNewMP,i);
                     pNewMP->ComputeDistinctiveDescriptors();
@@ -2244,7 +2238,7 @@ void Tracking::StereoInitialization()
                 if(rightIndex != -1){
                     cv::Mat x3D = mCurrentFrame.mvStereo3Dpoints[i];
 
-                    MapPoint* pNewMP = new MapPoint(x3D,pKFini,mpAtlas->GetCurrentMap(),-1);
+                    MapPoint* pNewMP = new MapPoint(x3D,pKFini,mpAtlas->GetCurrentMap());
 
                     pNewMP->AddObservation(pKFini,i);
                     pNewMP->AddObservation(pKFini,rightIndex + mCurrentFrame.Nleft);
@@ -2287,7 +2281,7 @@ void Tracking::StereoInitialization()
 }
 
 
-void Tracking::MonocularInitialization(const bool semantic_mode)
+void Tracking::MonocularInitialization()
 {
 
     if(!mpInitializer)
@@ -2335,7 +2329,7 @@ void Tracking::MonocularInitialization(const bool semantic_mode)
 
         // Find correspondences
         ORBmatcher matcher(0.9,true);
-        int nmatches = matcher.SearchForInitialization(mInitialFrame,mCurrentFrame,mvbPrevMatched,mvIniMatches,100);//TODO: maybe add semantic filtering here
+        int nmatches = matcher.SearchForInitialization(mInitialFrame,mCurrentFrame,mvbPrevMatched,mvIniMatches,100);
 
         // Check if there are enough correspondences
         if(nmatches<100)
@@ -2350,7 +2344,7 @@ void Tracking::MonocularInitialization(const bool semantic_mode)
         cv::Mat tcw; // Current Camera Translation
         vector<bool> vbTriangulated; // Triangulated Correspondences (mvIniMatches)
 
-        if(mpCamera->ReconstructWithTwoViews(mInitialFrame.mvKeysUn,mCurrentFrame.mvKeysUn,mvIniMatches,Rcw,tcw,mvIniP3D,vbTriangulated,mvClass,semantic_mode))
+        if(mpCamera->ReconstructWithTwoViews(mInitialFrame.mvKeysUn,mCurrentFrame.mvKeysUn,mvIniMatches,Rcw,tcw,mvIniP3D,vbTriangulated))
         {
             for(size_t i=0, iend=mvIniMatches.size(); i<iend;i++)
             {
@@ -2400,8 +2394,7 @@ void Tracking::CreateInitialMapMonocular()
 
         //Create MapPoint.
         cv::Mat worldPos(mvIniP3D[i]);
-        int class_id = mvClass[i];
-        MapPoint* pMP = new MapPoint(worldPos,pKFcur,mpAtlas->GetCurrentMap(), class_id);
+        MapPoint* pMP = new MapPoint(worldPos,pKFcur,mpAtlas->GetCurrentMap());
 
         pKFini->AddMapPoint(pMP,i);
         pKFcur->AddMapPoint(pMP,mvIniMatches[i]);
@@ -2576,7 +2569,7 @@ void Tracking::CheckReplacedInLastFrame()
 }
 
 
-bool Tracking::TrackReferenceKeyFrame(const bool semantic_mode)
+bool Tracking::TrackReferenceKeyFrame()
 {
     // Compute Bag of Words vector
     mCurrentFrame.ComputeBoW();
@@ -2586,11 +2579,11 @@ bool Tracking::TrackReferenceKeyFrame(const bool semantic_mode)
     ORBmatcher matcher(0.7,true);
     vector<MapPoint*> vpMapPointMatches;
 
-    int nmatches = matcher.SearchByBoW(mpReferenceKF,mCurrentFrame,vpMapPointMatches,semantic_mode);
+    int nmatches = matcher.SearchByBoW(mpReferenceKF,mCurrentFrame,vpMapPointMatches);
 
     if(nmatches<15)
     {
-        cerr << "TRACK_REF_KF: Less than 15 matches!!\n";
+        cout << "TRACK_REF_KF: Less than 15 matches!!\n";
         return false;
     }
 
@@ -2685,7 +2678,7 @@ void Tracking::UpdateLastFrame()
         if(bCreateNew)
         {
             cv::Mat x3D = mLastFrame.UnprojectStereo(i);
-            MapPoint* pNewMP = new MapPoint(x3D,mpAtlas->GetCurrentMap(),&mLastFrame,i, -1);
+            MapPoint* pNewMP = new MapPoint(x3D,mpAtlas->GetCurrentMap(),&mLastFrame,i);
 
             mLastFrame.mvpMapPoints[i]=pNewMP;
 
@@ -3162,7 +3155,7 @@ void Tracking::CreateNewKeyFrame()
                         x3D = mCurrentFrame.UnprojectStereoFishEye(i);
                     }
 
-                    MapPoint* pNewMP = new MapPoint(x3D,pKF,mpAtlas->GetCurrentMap(),-1);
+                    MapPoint* pNewMP = new MapPoint(x3D,pKF,mpAtlas->GetCurrentMap());
                     pNewMP->AddObservation(pKF,i);
 
                     //Check if it is a stereo observation in order to not
@@ -4018,7 +4011,6 @@ void Tracking::CreateNewMapPoints()
             bool bStereo1 = kp1_ur>=0;
 
             const cv::KeyPoint &kp2 = pKF2->mvKeysUn[idx2];
-            int class_id = kp2.class_id;
             const float kp2_ur = pKF2->mvuRight[idx2];
             bool bStereo2 = kp2_ur>=0;
 
@@ -4155,7 +4147,7 @@ void Tracking::CreateNewMapPoints()
                 continue;
 
             // Triangulation is succesfull
-            MapPoint* pMP = new MapPoint(x3D,mpLastKeyFrame,mpAtlas->GetCurrentMap(),class_id);
+            MapPoint* pMP = new MapPoint(x3D,mpLastKeyFrame,mpAtlas->GetCurrentMap());
 
             pMP->AddObservation(mpLastKeyFrame,idx1);
             pMP->AddObservation(pKF2,idx2);

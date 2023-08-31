@@ -31,37 +31,23 @@ using namespace std;
 void LoadImages(const string &strSequence, vector<string> &vstrImageFilenames,
                 vector<double> &vTimestamps);
 
-void LoadSegment(const string &strSequence, vector<string> &vstrImageFilenames,
-                vector<double> &vTimestamps);
-
 int main(int argc, char **argv)
 {
-    if(argc != 5)
+    if(argc != 4)
     {
         cerr << endl << "Usage: ./mono_kitti path_to_vocabulary path_to_settings path_to_sequence" << endl;
         return 1;
     }
 
-    bool semantic_mode = true;
-
-    // Retrieve paths to images and segments
+    // Retrieve paths to images
     vector<string> vstrImageFilenames;
-    vector<string> vstrSegFilenames;
     vector<double> vTimestamps;
     LoadImages(string(argv[3]), vstrImageFilenames, vTimestamps);
-    if(semantic_mode){
-        LoadSegment(string(argv[4]), vstrSegFilenames, vTimestamps);
-    }
-    else{
-        vstrSegFilenames = vstrImageFilenames;
-    }
-    cerr<<"after loading";
 
     int nImages = vstrImageFilenames.size();
 
-
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
-    ORB_SLAM3::System SLAM(argv[1],argv[2],ORB_SLAM3::System::MONOCULAR,true, semantic_mode);
+    ORB_SLAM3::System SLAM(argv[1],argv[2],ORB_SLAM3::System::MONOCULAR,true);
 
     // Vector for tracking time statistics
     vector<float> vTimesTrack;
@@ -69,22 +55,15 @@ int main(int argc, char **argv)
 
     // Main loop
     cv::Mat im;
-    cv::Mat seg;
     for(int ni=0; ni<nImages; ni++)
     {
         // Read image from file
         im = cv::imread(vstrImageFilenames[ni],cv::IMREAD_UNCHANGED);
-        seg = cv::imread(vstrSegFilenames[ni],-1);
         double tframe = vTimestamps[ni];
 
         if(im.empty())
         {
             cerr << endl << "Failed to load image at: " << vstrImageFilenames[ni] << endl;
-            return 1;
-        }
-        if(seg.empty())
-        {
-            cerr << endl << "Failed to load segment at: " << vstrSegFilenames[ni] << endl;
             return 1;
         }
 
@@ -95,7 +74,7 @@ int main(int argc, char **argv)
 #endif
 
         // Pass the image to the SLAM system
-        SLAM.TrackMonocular(im, seg, tframe,vector<ORB_SLAM3::IMU::Point>(), vstrImageFilenames[ni], vstrSegFilenames[ni], semantic_mode);
+        SLAM.TrackMonocular(im,tframe,vector<ORB_SLAM3::IMU::Point>(), vstrImageFilenames[ni]);
 
 #ifdef COMPILEDWITHC11
         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
@@ -133,46 +112,12 @@ int main(int argc, char **argv)
     cout << "mean tracking time: " << totaltime/nImages << endl;
 
     // Save camera trajectory
-    string save_path = "/Datasets/Kitti/trajectory/09/";
-    SLAM.SaveKeyFrameTrajectoryTUM(save_path+"KeyFrameTrajectory_seg.txt");
-    SLAM.SaveTrajectoryKITTI(save_path+"CameraTrajectory_seg.txt");
+    SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");    
 
     return 0;
 }
 
 void LoadImages(const string &strPathToSequence, vector<string> &vstrImageFilenames, vector<double> &vTimestamps)
-{
-    ifstream fTimes;
-    string strPathTimeFile = strPathToSequence + "/times.txt";
-    fTimes.open(strPathTimeFile.c_str());
-    while(!fTimes.eof())
-    {
-        string s;
-        getline(fTimes,s);
-        if(!s.empty())
-        {
-            stringstream ss;
-            ss << s;
-            double t;
-            ss >> t;
-            vTimestamps.push_back(t);
-        }
-    }
-
-    string strPrefixLeft = strPathToSequence + "/image_0/";
-
-    const int nTimes = vTimestamps.size();
-    vstrImageFilenames.resize(nTimes);
-
-    for(int i=0; i<nTimes; i++)
-    {
-        stringstream ss;
-        ss << setfill('0') << setw(6) << i;
-        vstrImageFilenames[i] = strPrefixLeft + ss.str() + ".png";
-    }
-}
-
-void LoadSegment(const string &strPathToSequence, vector<string> &vstrImageFilenames, vector<double> &vTimestamps)
 {
     ifstream fTimes;
     string strPathTimeFile = strPathToSequence + "/times.txt";

@@ -70,7 +70,7 @@ public:
     // Preprocess the input and call Track(). Extract features and performs stereo matching.
     cv::Mat GrabImageStereo(const cv::Mat &imRectLeft,const cv::Mat &imRectRight, const double &timestamp, string filename);
     cv::Mat GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const double &timestamp, string filename);
-    cv::Mat GrabImageMonocular(const cv::Mat &im, const cv::Mat &seg, const double &timestamp, string filename, string segname, const bool semantic_mode = false);
+    cv::Mat GrabImageMonocular(const cv::Mat &im, const double &timestamp, string filename);
     // cv::Mat GrabImageImuMonocular(const cv::Mat &im, const double &timestamp);
 
     void GrabImuData(const IMU::Point &imuMeasurement);
@@ -130,7 +130,6 @@ public:
     std::vector<int> mvIniMatches;
     std::vector<cv::Point2f> mvbPrevMatched;
     std::vector<cv::Point3f> mvIniP3D;
-    std::vector<int> mvClass;
     Frame mInitialFrame;
 
     // Lists used to recover the full camera trajectory at the end of the execution.
@@ -186,19 +185,19 @@ public:
 protected:
 
     // Main tracking function. It is independent of the input sensor.
-    void Track(const bool semantic_mode = false);
+    void Track();
 
     // Map initialization for stereo and RGB-D
     void StereoInitialization();
 
     // Map initialization for monocular
-    void MonocularInitialization(const bool semantic_mode = false);
+    void MonocularInitialization();
     void CreateNewMapPoints();
     cv::Mat ComputeF12(KeyFrame *&pKF1, KeyFrame *&pKF2);
     void CreateInitialMapMonocular();
 
     void CheckReplacedInLastFrame();
-    bool TrackReferenceKeyFrame(const bool semantic_mode = false);
+    bool TrackReferenceKeyFrame();
     void UpdateLastFrame();
     bool TrackWithMotionModel();
     bool PredictStateIMU();

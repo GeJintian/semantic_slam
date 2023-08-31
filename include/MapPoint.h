@@ -44,9 +44,9 @@ class MapPoint
 public:
     MapPoint();
 
-    MapPoint(const cv::Mat &Pos, KeyFrame* pRefKF, Map* pMap, int id);
+    MapPoint(const cv::Mat &Pos, KeyFrame* pRefKF, Map* pMap);
     MapPoint(const double invDepth, cv::Point2f uv_init, KeyFrame* pRefKF, KeyFrame* pHostKF, Map* pMap);
-    MapPoint(const cv::Mat &Pos,  Map* pMap, Frame* pFrame, const int &idxF, int id);
+    MapPoint(const cv::Mat &Pos,  Map* pMap, Frame* pFrame, const int &idxF);
 
     void SetWorldPos(const cv::Mat &Pos);
 
@@ -103,9 +103,6 @@ public:
     long int mnFirstKFid;
     long int mnFirstFrame;
     int nObs;
-
-    // Variables used by semantic
-    int class_id;
 
     // Variables used by the tracking
     float mTrackProjX;

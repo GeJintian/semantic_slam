@@ -266,7 +266,7 @@ bool ORBmatcher::CheckDistEpipolarLine2(const cv::KeyPoint &kp1, const cv::KeyPo
         return dsqr<3.84*pKF2->mvLevelSigma2[kp2.octave]*unc;
 }
 
-int ORBmatcher::SearchByBoW(KeyFrame* pKF,Frame &F, vector<MapPoint*> &vpMapPointMatches, const bool semantic_mode)
+int ORBmatcher::SearchByBoW(KeyFrame* pKF,Frame &F, vector<MapPoint*> &vpMapPointMatches)
 {
     const vector<MapPoint*> vpMapPointsKF = pKF->GetMapPointMatches();
 
@@ -369,8 +369,8 @@ int ORBmatcher::SearchByBoW(KeyFrame* pKF,Frame &F, vector<MapPoint*> &vpMapPoin
                     }
 
                 }
-                //if (semantic_mode&&!(pKF->mvKeys[realIdxKF].class_id==F.mvKeys[bestIdxF].class_id)) cerr<<"semantic matching works"<<endl;
-                if(  (bestDist1<=TH_LOW)&& (!semantic_mode || (semantic_mode&&(pKF->mvKeys[realIdxKF].class_id==F.mvKeys[bestIdxF].class_id))) )
+
+                if(bestDist1<=TH_LOW)
                 {
                     if(static_cast<float>(bestDist1)<mfNNratio*static_cast<float>(bestDist2))
                     {

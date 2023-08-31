@@ -39,7 +39,7 @@ namespace ORB_SLAM3
 Verbose::eLevel Verbose::th = Verbose::VERBOSITY_NORMAL;
 
 System::System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor,
-               const bool bUseViewer, const bool semantic_mode, const int initFr, const string &strSequence, const string &strLoadingFile):
+               const bool bUseViewer, const int initFr, const string &strSequence, const string &strLoadingFile):
     mSensor(sensor), mpViewer(static_cast<Viewer*>(NULL)), mbReset(false), mbResetActiveMap(false),
     mbActivateLocalizationMode(false), mbDeactivateLocalizationMode(false)
 {
@@ -269,7 +269,7 @@ cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const doub
     return Tcw;
 }
 
-cv::Mat System::TrackMonocular(const cv::Mat &im, const cv::Mat &seg, const double &timestamp, const vector<IMU::Point>& vImuMeas, string filename, string segname, bool semantic_mode)
+cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp, const vector<IMU::Point>& vImuMeas, string filename)
 {
     if(mSensor!=MONOCULAR && mSensor!=IMU_MONOCULAR)
     {
@@ -322,7 +322,7 @@ cv::Mat System::TrackMonocular(const cv::Mat &im, const cv::Mat &seg, const doub
         for(size_t i_imu = 0; i_imu < vImuMeas.size(); i_imu++)
             mpTracker->GrabImuData(vImuMeas[i_imu]);
 
-    cv::Mat Tcw = mpTracker->GrabImageMonocular(im,seg,timestamp,filename,segname,semantic_mode);
+    cv::Mat Tcw = mpTracker->GrabImageMonocular(im,timestamp,filename);
 
     unique_lock<mutex> lock2(mMutexState);
     mTrackingState = mpTracker->mState;
@@ -652,11 +652,11 @@ void System::SaveKeyFrameTrajectoryEuRoC(const string &filename)
 void System::SaveTrajectoryKITTI(const string &filename)
 {
     cout << endl << "Saving camera trajectory to " << filename << " ..." << endl;
-    // if(mSensor==MONOCULAR)
-    // {
-    //     cerr << "ERROR: SaveTrajectoryKITTI cannot be used for monocular." << endl;
-    //     return;
-    // }
+    if(mSensor==MONOCULAR)
+    {
+        cerr << "ERROR: SaveTrajectoryKITTI cannot be used for monocular." << endl;
+        return;
+    }
 
     vector<KeyFrame*> vpKFs = mpAtlas->GetAllKeyFrames();
     sort(vpKFs.begin(),vpKFs.end(),KeyFrame::lId);
@@ -677,9 +677,6 @@ void System::SaveTrajectoryKITTI(const string &filename)
     // which is true when tracking failed (lbL).
     list<ORB_SLAM3::KeyFrame*>::iterator lRit = mpTracker->mlpReferences.begin();
     list<double>::iterator lT = mpTracker->mlFrameTimes.begin();
-    cerr<<mpTracker->mlpReferences.size()<<endl;
-    cerr<<mpTracker->mlFrameTimes.size()<<endl;
-    cerr<<mpTracker->mlRelativeFramePoses.size()<<endl;
     for(list<cv::Mat>::iterator lit=mpTracker->mlRelativeFramePoses.begin(), lend=mpTracker->mlRelativeFramePoses.end();lit!=lend;lit++, lRit++, lT++)
     {
         ORB_SLAM3::KeyFrame* pKF = *lRit;
