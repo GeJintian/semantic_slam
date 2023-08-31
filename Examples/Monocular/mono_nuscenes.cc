@@ -80,7 +80,7 @@ int main(int argc, char **argv)
     // Main loop
     cv::Mat im;
     cv::Mat seg;
-    cerr<<nImages<<endl;
+    vector <cv::Mat> results;
     for(int ni=0; ni<nImages; ni++)
     {
         // Read image from file
@@ -112,7 +112,8 @@ int main(int argc, char **argv)
 #endif
 
         // Pass the image to the SLAM system
-        SLAM.TrackMonocular(im, seg, tframe,vector<ORB_SLAM3::IMU::Point>(), vstrImageFilenames[ni], vstrSegFilenames[ni], semantic_mode);
+        cv::Mat res = SLAM.TrackMonocular(im,tframe,vector<ORB_SLAM3::IMU::Point>(), vstrImageFilenames[ni]);
+        results.push_back(res);
 #ifdef COMPILEDWITHC11
         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 #else
@@ -148,10 +149,29 @@ int main(int argc, char **argv)
     cout << "mean tracking time: " << totaltime/nImages << endl;
 
     // Save camera trajectory
-    string save_path = "/Datasets/nuScenes/eval/orbslam3/"+token;
+    string save_path = "/Datasets/nuScenes/eval/orbslam3/"+token+"/CameraTrajectory_orb.txt";
 
-    SLAM.SaveKeyFrameTrajectoryTUM(save_path+"/KeyFrameTrajectory_orb.txt");
-    SLAM.SaveTrajectoryKITTI(save_path+"/CameraTrajectory_orb.txt");
+    ofstream f;
+    f.open(save_path.c_str());
+    f << fixed;
+
+
+    //Saving by hand
+    for(vector<cv::Mat>::iterator lit=results.begin(), lend=results.end();lit!=lend;lit++){
+        cv::Mat Tcw = *lit;
+        cv::Mat Rwc = Tcw.rowRange(0,3).colRange(0,3).t();
+        cv::Mat twc = -Rwc*Tcw.rowRange(0,3).col(3);
+
+        f << setprecision(9) << Rwc.at<float>(0,0) << " " << Rwc.at<float>(0,1)  << " " << Rwc.at<float>(0,2) << " "  << twc.at<float>(0) << " " <<
+                Rwc.at<float>(1,0) << " " << Rwc.at<float>(1,1)  << " " << Rwc.at<float>(1,2) << " "  << twc.at<float>(1) << " " <<
+                Rwc.at<float>(2,0) << " " << Rwc.at<float>(2,1)  << " " << Rwc.at<float>(2,2) << " "  << twc.at<float>(2) << endl;
+    }
+    f.close();
+
+
+
+    //SLAM.SaveKeyFrameTrajectoryTUM(save_path+"/KeyFrameTrajectory_orb.txt");
+    //SLAM.SaveTrajectoryKITTI(save_path+"/CameraTrajectory_orb.txt");
 
     return 0;
 }
