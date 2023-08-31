@@ -677,6 +677,9 @@ void System::SaveTrajectoryKITTI(const string &filename)
     // which is true when tracking failed (lbL).
     list<ORB_SLAM3::KeyFrame*>::iterator lRit = mpTracker->mlpReferences.begin();
     list<double>::iterator lT = mpTracker->mlFrameTimes.begin();
+    cerr<<mpTracker->mlpReferences.size()<<endl;
+    cerr<<mpTracker->mlFrameTimes.size()<<endl;
+    cerr<<mpTracker->mlRelativeFramePoses.size()<<endl;
     for(list<cv::Mat>::iterator lit=mpTracker->mlRelativeFramePoses.begin(), lend=mpTracker->mlRelativeFramePoses.end();lit!=lend;lit++, lRit++, lT++)
     {
         ORB_SLAM3::KeyFrame* pKF = *lRit;

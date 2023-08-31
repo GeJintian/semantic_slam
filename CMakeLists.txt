@@ -165,6 +165,10 @@ add_executable(mono_kitti
 Examples/Monocular/mono_kitti.cc)
 target_link_libraries(mono_kitti ${PROJECT_NAME})
 
+add_executable(mono_nuscenes
+Examples/Monocular/mono_nuscenes.cc)
+target_link_libraries(mono_nuscenes ${PROJECT_NAME})
+
 #add_executable(mono_euroc
 #Examples/Monocular/mono_euroc.cc)
 #target_link_libraries(mono_euroc ${PROJECT_NAME})

@@ -38,7 +38,7 @@
 #include <include/MLPnPsolver.h>
 
 using namespace std;
-
+extern int count_i = 0;
 namespace ORB_SLAM3
 {
 
@@ -1686,7 +1686,7 @@ void Tracking::Track(const bool semantic_mode)
         }
         else if(mCurrentFrame.mTimeStamp>mLastFrame.mTimeStamp+1.0)
         {
-            cout << "id last: " << mLastFrame.mnId << "    id curr: " << mCurrentFrame.mnId << endl;
+            cerr << "id last: " << mLastFrame.mnId << "    id curr: " << mCurrentFrame.mnId << endl;
             if(mpAtlas->isInertial())
             {
 
@@ -1765,7 +1765,7 @@ void Tracking::Track(const bool semantic_mode)
         }
 
         mpFrameDrawer->Update(this,false);
-
+        cerr<<mState<<endl;
         if(mState!=OK) // If rightly initialized, mState=OK
         {
             mLastFrame = Frame(mCurrentFrame);
@@ -1781,7 +1781,7 @@ void Tracking::Track(const bool semantic_mode)
     {
         // System is initialized. Track Frame.
         bool bOK;
-
+    count_i = count_i+1;
 #ifdef REGISTER_TIMES
         std::chrono::steady_clock::time_point time_StartPosePred = std::chrono::steady_clock::now();
 #endif
@@ -1875,7 +1875,7 @@ void Tracking::Track(const bool semantic_mode)
                     if (pCurrentMap->KeyFramesInMap()<10)
                     {
                         mpSystem->ResetActiveMap();
-                        cout << "Reseting current map..." << endl;
+                        cerr << "Reseting current map..." << endl;
                     }else
                         CreateMapInAtlas();
 
@@ -2127,6 +2127,7 @@ void Tracking::Track(const bool semantic_mode)
         {
             if(pCurrentMap->KeyFramesInMap()<=5)
             {
+                cerr<<"mState Lost"<<endl;
                 mpSystem->ResetActiveMap();
                 return;
             }
@@ -2171,6 +2172,10 @@ void Tracking::Track(const bool semantic_mode)
         }
 
     }
+    else{
+        cerr<<"lost one frame"<<endl;
+    }
+
 }
 
 
