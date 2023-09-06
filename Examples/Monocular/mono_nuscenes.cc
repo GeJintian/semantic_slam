@@ -20,6 +20,7 @@
 #include<algorithm>
 #include<fstream>
 #include<chrono>
+#include <cstdio> 
 #include<iomanip>
 
 #include<opencv2/core/core.hpp>
@@ -81,6 +82,7 @@ int main(int argc, char **argv)
     cv::Mat im;
     cv::Mat seg;
     vector <cv::Mat> results;
+    int count_zero = 0;
     for(int ni=0; ni<nImages; ni++)
     {
         // Read image from file
@@ -113,7 +115,9 @@ int main(int argc, char **argv)
 
         // Pass the image to the SLAM system
         cv::Mat res = SLAM.TrackMonocular(im,tframe,vector<ORB_SLAM3::IMU::Point>(), vstrImageFilenames[ni]);
-        results.push_back(res);
+        if(res.size().width==0){
+            count_zero = count_zero + 1;
+        }
 #ifdef COMPILEDWITHC11
         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 #else
@@ -149,29 +153,31 @@ int main(int argc, char **argv)
     cout << "mean tracking time: " << totaltime/nImages << endl;
 
     // Save camera trajectory
-    string save_path = "/Datasets/nuScenes/eval/orbslam3/"+token+"/CameraTrajectory_orb.txt";
+    string save_path = "/Datasets/nuScenes/eval/orbslam3/"+token;
 
-    ofstream f;
-    f.open(save_path.c_str());
-    f << fixed;
-
-
-    //Saving by hand
-    for(vector<cv::Mat>::iterator lit=results.begin(), lend=results.end();lit!=lend;lit++){
-        cv::Mat Tcw = *lit;
-        cv::Mat Rwc = Tcw.rowRange(0,3).colRange(0,3).t();
-        cv::Mat twc = -Rwc*Tcw.rowRange(0,3).col(3);
-
-        f << setprecision(9) << Rwc.at<float>(0,0) << " " << Rwc.at<float>(0,1)  << " " << Rwc.at<float>(0,2) << " "  << twc.at<float>(0) << " " <<
-                Rwc.at<float>(1,0) << " " << Rwc.at<float>(1,1)  << " " << Rwc.at<float>(1,2) << " "  << twc.at<float>(1) << " " <<
-                Rwc.at<float>(2,0) << " " << Rwc.at<float>(2,1)  << " " << Rwc.at<float>(2,2) << " "  << twc.at<float>(2) << endl;
-    }
-    f.close();
-
-
+    //The first several frames are used as initialization. So we assign a value to it
 
     //SLAM.SaveKeyFrameTrajectoryTUM(save_path+"/KeyFrameTrajectory_orb.txt");
-    //SLAM.SaveTrajectoryKITTI(save_path+"/CameraTrajectory_orb.txt");
+    SLAM.SaveTrajectoryKITTI(save_path+"/CameraTrajectory_orb.txt");
+
+    ifstream reading(save_path+"/CameraTrajectory_orb.txt");
+    string firstline;
+    getline(reading, firstline);
+    reading.close();
+
+    ifstream reading_new(save_path+"/CameraTrajectory_orb.txt");
+    ofstream writing(save_path+"/temp.txt");
+    for(int i = 0; i < count_zero; i++){
+        writing<<firstline<<"\n";
+    }
+    writing<<reading_new.rdbuf();
+    reading_new.close();
+    writing.close();
+
+    string input_file = save_path+"/CameraTrajectory_orb.txt";
+    string output_file = save_path+"/temp.txt";
+    remove(input_file.c_str());
+    rename(output_file.c_str(),input_file.c_str());
 
     return 0;
 }
