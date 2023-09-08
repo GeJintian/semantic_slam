@@ -30,7 +30,7 @@
 
 using namespace std;
 
-void LoadImages(const string &strImagePath, const string &strPathTimes,
+void LoadImages(const string &strImagePath,
                 vector<string> &vstrImages, vector<double> &vTimeStamps);
 
 void LoadIMU(const string &strImuPath, vector<double> &vTimeStamps, vector<cv::Point3f> &vAcc, vector<cv::Point3f> &vGyro);
@@ -55,6 +55,13 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    string str = argv[3];
+    istringstream iss(str);
+    string token;
+    while (getline(iss, token, '/'))
+    {
+        continue;
+    }
 
     // Load all sequences:
     int seq;
@@ -74,11 +81,13 @@ int main(int argc, char **argv)
     nImages.resize(num_seq);
     nImu.resize(num_seq);
 
+    int count_zero = 0;
+    bool flag = true; 
     int tot_images = 0;
     for (seq = 0; seq<num_seq; seq++)
     {
         cout << "Loading images for sequence " << seq << "...";
-        LoadImages(string(argv[3*(seq+1)]), string(argv[3*(seq+1)+1]), vstrImageFilenames[seq], vTimestampsCam[seq]);
+        LoadImages(string(argv[3*(seq+1)]), vstrImageFilenames[seq], vTimestampsCam[seq]);
         cout << "LOADED!" << endl;
 
         cout << "Loading IMU for sequence " << seq << "...";
@@ -163,7 +172,13 @@ int main(int argc, char **argv)
     #endif
 
             // Pass the image to the SLAM system
-            SLAM.TrackMonocular(im,tframe,vImuMeas);
+            cv::Mat res = SLAM.TrackMonocular(im,tframe,vImuMeas);
+            if (res.size().width!=0){
+                flag = false;
+            }
+            if(flag){
+                count_zero = count_zero + 1;
+            }
 
     #ifdef COMPILEDWITHC11
             std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
@@ -199,20 +214,6 @@ int main(int argc, char **argv)
     // Stop all threads
     SLAM.Shutdown();
 
-    // Save camera trajectory
-
-    if (bFileName)
-    {
-        const string kf_file =  "kf_" + string(argv[argc-1]) + ".txt";
-        const string f_file =  "f_" + string(argv[argc-1]) + ".txt";
-        SLAM.SaveTrajectoryEuRoC(f_file);
-        SLAM.SaveKeyFrameTrajectoryEuRoC(kf_file);
-    }
-    else
-    {
-        SLAM.SaveTrajectoryEuRoC("CameraTrajectory.txt");
-        SLAM.SaveKeyFrameTrajectoryEuRoC("KeyFrameTrajectory.txt");
-    }
 
     sort(vTimesTrack.begin(),vTimesTrack.end());
     float totaltime = 0;
@@ -224,18 +225,41 @@ int main(int argc, char **argv)
     cout << "median tracking time: " << vTimesTrack[nImages[0]/2] << endl;
     cout << "mean tracking time: " << totaltime/proccIm << endl;
 
+    // Save camera trajectory
+    string save_path = "/Datasets/nuScenes/eval/orbslam3/"+token;
+
+    //The first several frames are used as initialization. So we assign a value to it
+
+    //SLAM.SaveKeyFrameTrajectoryTUM(save_path+"/KeyFrameTrajectory_orb.txt");
+    SLAM.SaveTrajectoryKITTI(save_path+"/CameraTrajectory_orb.txt");
+
+    ifstream reading(save_path+"/CameraTrajectory_orb.txt");
+    string firstline;
+    getline(reading, firstline);
+    reading.close();
+
+    ifstream reading_new(save_path+"/CameraTrajectory_orb.txt");
+    ofstream writing(save_path+"/temp.txt");
+    for(int i = 0; i < count_zero; i++){
+        writing<<firstline<<"\n";
+    }
+    writing<<reading_new.rdbuf();
+    reading_new.close();
+    writing.close();
+
+    string input_file = save_path+"/CameraTrajectory_orb.txt";
+    string output_file = save_path+"/temp.txt";
+    remove(input_file.c_str());
+    rename(output_file.c_str(),input_file.c_str());
+
     return 0;
 }
 
-void LoadImages(const string &strImagePath, const string &strPathTimes,
-                vector<string> &vstrImages, vector<double> &vTimeStamps)
+void LoadImages(const string &strPathToSequence, vector<string> &vstrImageFilenames, vector<double> &vTimestamps)
 {
     ifstream fTimes;
-    cout << strImagePath << endl;
-    cout << strPathTimes << endl;
-    fTimes.open(strPathTimes.c_str());
-    vTimeStamps.reserve(5000);
-    vstrImages.reserve(5000);
+    string strPathTimeFile = strPathToSequence + "/times.txt";
+    fTimes.open(strPathTimeFile.c_str());
     while(!fTimes.eof())
     {
         string s;
@@ -244,12 +268,22 @@ void LoadImages(const string &strImagePath, const string &strPathTimes,
         {
             stringstream ss;
             ss << s;
-            vstrImages.push_back(strImagePath + "/" + ss.str() + ".png");
             double t;
             ss >> t;
-            vTimeStamps.push_back(t/1e9);
-
+            vTimestamps.push_back(t/1e9);
         }
+    }
+
+    string strPrefixLeft = strPathToSequence + "/image_0/";
+
+    const int nTimes = vTimestamps.size();
+    vstrImageFilenames.resize(nTimes);
+
+    for(int i=0; i<nTimes; i++)
+    {
+        stringstream ss;
+        ss << setfill('0') << setw(6) << i;
+        vstrImageFilenames[i] = strPrefixLeft + ss.str() + ".jpg";
     }
 }
 

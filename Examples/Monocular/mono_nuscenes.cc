@@ -83,9 +83,11 @@ int main(int argc, char **argv)
     cv::Mat seg;
     vector <cv::Mat> results;
     int count_zero = 0;
+    bool flag = true; 
     for(int ni=0; ni<nImages; ni++)
     {
         // Read image from file
+
         im = cv::imread(vstrImageFilenames[ni],cv::IMREAD_UNCHANGED);
         if (semantic_mode){
             seg = cv::imread(vstrSegFilenames[ni],-1);
@@ -115,7 +117,10 @@ int main(int argc, char **argv)
 
         // Pass the image to the SLAM system
         cv::Mat res = SLAM.TrackMonocular(im,tframe,vector<ORB_SLAM3::IMU::Point>(), vstrImageFilenames[ni]);
-        if(res.size().width==0){
+        if (res.size().width!=0){
+            flag = false;
+        }
+        if(flag){
             count_zero = count_zero + 1;
         }
 #ifdef COMPILEDWITHC11
@@ -137,7 +142,7 @@ int main(int argc, char **argv)
         if(ttrack<T)
             usleep((T-ttrack)*1e6);
     }
-    cerr<<count_i<<endl;
+    cerr<<count_zero<<endl;
     // Stop all threads
     SLAM.Shutdown();
 
