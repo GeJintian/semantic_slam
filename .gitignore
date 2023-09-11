@@ -42,7 +42,7 @@ Vocabulary/ORBvoc.txt
 build/
 
 lib/
-
+.vscode
 cmake_modules/
 cmake-build-debug/
 

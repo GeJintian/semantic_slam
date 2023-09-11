@@ -8,6 +8,9 @@ from scipy.spatial.transform import Rotation as R
 root = '/home/oscar/workspace/orbslam3_docker-main/Datasets/nuScenes/v1.0-trainval/v1.0-trainval01_blobs'
 nusc = NuScenes(version='v1.0-trainval', dataroot=root, verbose=True)
 
+from nuscenes.can_bus.can_bus_api import NuScenesCanBus
+nusc_can = NuScenesCanBus(dataroot='/home/oscar/workspace/orbslam3_docker-main/Datasets/nuScenes')
+
 my_scene = nusc.scene[1]
 name = my_scene['name']
 first_sample_token = my_scene['first_sample_token']
@@ -16,6 +19,7 @@ my_sample = nusc.get('sample', first_sample_token)
 sensor = 'CAM_FRONT'
 cam_token = nusc.get('sample_data', my_sample['data'][sensor])['calibrated_sensor_token']
 cam_data = nusc.get('calibrated_sensor',cam_token)['camera_intrinsic']
+cam_spatial = {'trans':nusc.get('calibrated_sensor',cam_token)['translation'],'rotate':nusc.get('calibrated_sensor',cam_token)['rotation']}
 fx = cam_data[0][0]
 fy = cam_data[1][1]
 cx = cam_data[0][2]
@@ -120,3 +124,35 @@ while current!='':
     count = count + 1
 f.close()
 d.close()
+
+imu = nusc_can.get_messages(name, 'ms_imu')
+imu_meta = nusc_can.get_messages(name, 'meta')["ms_imu"]
+
+max = imu_meta["var_stats"]["utime"]["max"]
+min = imu_meta["var_stats"]["utime"]["min"]
+
+delta = (max - min)/imu_meta["message_count"]
+
+f = open(save_path+'imu.txt','w')
+
+line = "#timestamp [ns],w_RS_S_x [rad s^-1],w_RS_S_y [rad s^-1],w_RS_S_z [rad s^-1],a_RS_S_x [m s^-2],a_RS_S_y [m s^-2],a_RS_S_z [m s^-2]"
+f.write(line+'\n')
+for idx in range(imu_meta["message_count"]):
+    timestamp = str(round(min+idx*delta))
+    w_RS_S_x,w_RS_S_z,w_RS_S_y = imu[idx]['rotation_rate']
+    a_RS_S_x,a_RS_S_z,a_RS_S_y = imu[idx]['linear_accel']
+    line = timestamp+str(w_RS_S_x)+','+str(w_RS_S_z)+','+str(w_RS_S_y)+','+str(a_RS_S_x)+','+str(0)+','+str(a_RS_S_y)
+    f.write(line+'\n')
+f.close
+
+with open(save_path+'config.yaml', 'r', encoding='utf-8') as f:
+    contents = f.read()
+
+r = R.from_quat(cam_spatial['rotation']).as_matrix()
+cam_str = '['+str(format(r[0][0],'.6f')) + ', ' + str(format(r[0][1],'.6f')) + ', ' + str(format(r[0][2],'.6f')) + ', ' +str(format(cam_spatial['translation'][0],'.6f')) + ', ' + str(format(r[2][0],'.6f')) + ', '  + str(format(r[2][1],'.6f')) + ', ' + str(format(r[2][2],'.6f')) + ', '+  str(format(cam_spatial['translation'][2],'.6f')) + ', '  + str(format(r[1][0],'.6f'))  +', ' + str(format(r[1][1],'.6f'))  +', ' + str(format(r[1][2],'.6f')) + ', '+  str(format(cam_spatial['translation'][1],'.6f'))+']'
+additional = "IMU.NoiseGyro: 0\nIMU.NoiseAcc: 0\nIMU.GyroWalk: 0\nIMU.AccWalk: 0\nIMU.Frequency: 100\n"+\
+            "Tbc: !!opencv-matrix\n\trows: 4\n\tcols: 4\n\tdt: f\n\tdata: "+cam_str
+
+contents = contents+additional
+with open(save_path+'config.yaml', 'w', encoding='utf-8') as f:
+    f.write(contents)

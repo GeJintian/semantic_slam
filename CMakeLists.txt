@@ -178,7 +178,11 @@ target_link_libraries(mono_nuscenes ${PROJECT_NAME})
 #target_link_libraries(mono_tum_vi ${PROJECT_NAME})
 
 # Monocular-Inertial examples
-#set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Monocular-Inertial)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Monocular-Inertial)
+
+add_executable(mono_inertial_nuscenes_vi
+Examples/Monocular-Inertial/mono_inertial_nuscenes_vi.cc)
+target_link_libraries(mono_inertial_nuscenes_vi ${PROJECT_NAME})
 
 #add_executable(mono_inertial_euroc
 #Examples/Monocular-Inertial/mono_inertial_euroc.cc)
