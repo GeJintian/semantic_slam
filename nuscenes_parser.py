@@ -118,7 +118,7 @@ while current!='':
     f.write(str(left_data['timestamp'])+'\n')
 
     r = R.from_quat(pose['rotation']).as_matrix()
-    pose_str = str(format(r[0][0],'.6e')) + ' ' + str(format(r[0][1],'.6e')) + ' ' + str(format(r[0][2],'.6e')) + ' ' +str(format(pose['translation'][0],'.6e')) + ' ' + str(format(r[2][0],'.6e')) + ' '  + str(format(r[2][1],'.6e')) + ' ' + str(format(r[2][2],'.6e')) + ' '+  str(format(pose['translation'][2],'.6e')) + ' '  + str(format(r[1][0],'.6e'))  +' ' + str(format(r[1][1],'.6e'))  +' ' + str(format(r[1][2],'.6e')) + ' '+  str(format(pose['translation'][1],'.6e'))
+    pose_str = str(format(r[0][0],'.6e')) + ' ' + str(format(r[0][1],'.6e')) + ' ' + str(format(r[0][2],'.6e')) + ' ' +str(format(pose['translation'][0],'.6e')) + ' ' + str(format(r[1][0],'.6e')) + ' '  + str(format(r[1][1],'.6e')) + ' ' + str(format(r[1][2],'.6e')) + ' '+  str(format(pose['translation'][2],'.6e')) + ' '  + str(format(r[2][0],'.6e'))  +' ' + str(format(r[2][1],'.6e'))  +' ' + str(format(r[2][2],'.6e')) + ' '+  str(format(pose['translation'][1],'.6e'))
     d.write(pose_str+'\n')
     current = left_data['next']
     count = count + 1
@@ -149,7 +149,7 @@ with open(save_path+'config.yaml', 'r', encoding='utf-8') as f:
     contents = f.read()
 
 r = R.from_quat(cam_spatial['rotation']).as_matrix()
-cam_str = '['+str(format(r[0][0],'.6f')) + ', ' + str(format(r[0][1],'.6f')) + ', ' + str(format(r[0][2],'.6f')) + ', ' +str(format(cam_spatial['translation'][0],'.6f')) + ', ' + str(format(r[2][0],'.6f')) + ', '  + str(format(r[2][1],'.6f')) + ', ' + str(format(r[2][2],'.6f')) + ', '+  str(format(cam_spatial['translation'][2],'.6f')) + ', '  + str(format(r[1][0],'.6f'))  +', ' + str(format(r[1][1],'.6f'))  +', ' + str(format(r[1][2],'.6f')) + ', '+  str(format(cam_spatial['translation'][1],'.6f'))+']'
+cam_str = '['+str(format(r[0][0],'.6f')) + ', ' + str(format(r[0][1],'.6f')) + ', ' + str(format(r[0][2],'.6f')) + ', ' +str(format(cam_spatial['translation'][0],'.6f')) + ', ' + str(format(r[1][0],'.6f')) + ', '  + str(format(r[1][1],'.6f')) + ', ' + str(format(r[1][2],'.6f')) + ', '+  str(format(cam_spatial['translation'][2],'.6f')) + ', '  + str(format(r[2][0],'.6f'))  +', ' + str(format(r[2][1],'.6f'))  +', ' + str(format(r[2][2],'.6f')) + ', '+  str(format(cam_spatial['translation'][1],'.6f'))+']'
 additional = "IMU.NoiseGyro: 0\nIMU.NoiseAcc: 0\nIMU.GyroWalk: 0\nIMU.AccWalk: 0\nIMU.Frequency: 100\n"+\
             "Tbc: !!opencv-matrix\n\trows: 4\n\tcols: 4\n\tdt: f\n\tdata: "+cam_str
 
